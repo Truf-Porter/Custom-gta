@@ -1,0 +1,276 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trevor 3D Demo</title>
+<style>
+* {
+    box-sizing: border-box;
+}
+html, body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #101014;
+    color: white;
+    font-family: Arial, sans-serif;
+}
+#scene {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+#ui {
+    position: fixed;
+    top: 18px;
+    left: 18px;
+    padding: 14px 18px;
+    background: #17171ddd;
+    border: 1px solid #38383f;
+    border-radius: 12px;
+    z-index: 2;
+}
+#ui h2 {
+    margin: 0 0 6px;
+    font-size: 19px;
+}
+#status {
+    font-size: 12px;
+    color: #aaa;
+}
+#controls {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    z-index: 2;
+}
+button {
+    border: 1px solid #444;
+    background: #222228;
+    color: white;
+    padding: 11px 16px;
+    border-radius: 9px;
+    font-size: 13px;
+}
+button:active {
+    background: #41414a;
+}
+#error {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(90%, 360px);
+    padding: 20px;
+    background: #201b1b;
+    border: 1px solid #784444;
+    border-radius: 12px;
+    text-align: center;
+    line-height: 1.6;
+    z-index: 5;
+}
+</style>
+</head>
+<body>
+
+<div id="ui">
+    <h2>Trevor 3D</h2>
+    <div id="status">Loading model...</div>
+</div>
+
+<div id="error">
+    <strong>Could not load Trevor</strong>
+    <p>Place your downloaded model at <code>assets/trevor.glb</code>.</p>
+    <p>Run this page through a local web server.</p>
+</div>
+
+<div id="controls">
+    <button id="spin">Pause Spin</button>
+    <button id="reset">Reset Camera</button>
+</div>
+
+<canvas id="scene"></canvas>
+
+<script type="importmap">
+{
+    "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+    }
+}
+</script>
+
+<script type="module">
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+const canvas = document.getElementById("scene");
+const status = document.getElementById("status");
+const error = document.getElementById("error");
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x101014);
+
+const camera = new THREE.PerspectiveCamera(
+    45,
+    window.innerWidth / window.innerHeight,
+    0.1,
+    1000
+);
+camera.position.set(0, 1.6, 5);
+
+const renderer = new THREE.WebGLRenderer({
+    canvas,
+    antialias: true
+});
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.2;
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0x333344, 2));
+
+const keyLight = new THREE.DirectionalLight(0xffffff, 3);
+keyLight.position.set(4, 7, 5);
+keyLight.castShadow = true;
+scene.add(keyLight);
+
+const rimLight = new THREE.PointLight(0x5577ff, 35, 15);
+rimLight.position.set(-4, 3, -3);
+scene.add(rimLight);
+
+const floor = new THREE.Mesh(
+    new THREE.PlaneGeometry(200, 200),
+    new THREE.MeshStandardMaterial({
+        color: 0x19191f,
+        roughness: 0.9
+    })
+);
+floor.rotation.x = -Math.PI / 2;
+floor.position.y = -0.01;
+floor.receiveShadow = true;
+scene.add(floor);
+
+const grid = new THREE.GridHelper(30, 30, 0x343440, 0x25252d);
+grid.position.y = 0;
+scene.add(grid);
+
+const character = new THREE.Group();
+scene.add(character);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.target.set(0, 1, 0);
+controls.minDistance = 1.5;
+controls.maxDistance = 10;
+controls.maxPolarAngle = Math.PI * 0.85;
+controls.autoRotate = false;
+
+let mixer = null;
+let spinning = true;
+let loaded = false;
+
+const loader = new GLTFLoader();
+
+loader.load(
+    "assets/trevor.glb",
+    (gltf) => {
+        const model = gltf.scene;
+
+        model.traverse((object) => {
+            if (object.isMesh) {
+                object.castShadow = true;
+                object.receiveShadow = true;
+            }
+        });
+
+        const bounds = new THREE.Box3().setFromObject(model);
+        const size = bounds.getSize(new THREE.Vector3());
+        const center = bounds.getCenter(new THREE.Vector3());
+
+        model.position.sub(center);
+
+        const height = Math.max(size.y, 0.001);
+        const scale = 2.2 / height;
+        model.scale.setScalar(scale);
+
+        character.add(model);
+        character.position.y = 1.1;
+
+        if (gltf.animations.length > 0) {
+            mixer = new THREE.AnimationMixer(model);
+            gltf.animations.forEach((clip) => {
+                mixer.clipAction(clip).play();
+            });
+        }
+
+        controls.target.set(0, 1.1, 0);
+        status.textContent = "Trevor loaded · Drag to rotate camera";
+        error.style.display = "none";
+        loaded = true;
+    },
+    (event) => {
+        if (event.total > 0) {
+            const percent = Math.round(event.loaded / event.total * 100);
+            status.textContent = `Loading model: ${percent}%`;
+        }
+    },
+    () => {
+        status.textContent = "Model not found";
+        error.style.display = "block";
+    }
+);
+
+document.getElementById("spin").addEventListener("click", (event) => {
+    spinning = !spinning;
+    event.currentTarget.textContent = spinning ? "Pause Spin" : "Resume Spin";
+});
+
+document.getElementById("reset").addEventListener("click", () => {
+    camera.position.set(0, 1.6, 5);
+    controls.target.set(0, 1.1, 0);
+    controls.update();
+});
+
+const clock = new THREE.Clock();
+
+function animate() {
+    requestAnimationFrame(animate);
+
+    const delta = Math.min(clock.getDelta(), 0.05);
+
+    if (loaded && spinning) {
+        character.rotation.y += delta * 0.8;
+    }
+
+    if (mixer) {
+        mixer.update(delta);
+    }
+
+    controls.update();
+    renderer.render(scene, camera);
+}
+
+animate();
+
+window.addEventListener("resize", () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+});
+</script>
+
+</body>
+</html>
