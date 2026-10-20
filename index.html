@@ -3,175 +3,66 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Trevor Philips 3D Demo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trevor Philips 3D</title>
 <style>
-* { box-sizing: border-box; }
-
-html, body {
-    margin: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    background: #101014;
-    color: white;
-    font-family: Arial, sans-serif;
-}
-
-#scene {
-    width: 100%;
-    height: 100%;
-    display: block;
-}
-
-#ui {
-    position: fixed;
-    top: 18px;
-    left: 18px;
-    padding: 14px 18px;
-    background: #17171ddd;
-    border: 1px solid #38383f;
-    border-radius: 12px;
-    z-index: 2;
-}
-
-#ui h2 {
-    margin: 0 0 6px;
-    font-size: 19px;
-}
-
-#status {
-    font-size: 12px;
-    color: #aaa;
-}
-
-#controls {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 8px;
-    z-index: 2;
-}
-
-button {
-    border: 1px solid #444;
-    background: #222228;
-    color: white;
-    padding: 11px 16px;
-    border-radius: 9px;
-    font-size: 13px;
-}
-
-button:active {
-    background: #41414a;
-}
-
-#error {
-    display: none;
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: min(90%, 360px);
-    padding: 20px;
-    background: #201b1b;
-    border: 1px solid #784444;
-    border-radius: 12px;
-    text-align: center;
-    line-height: 1.6;
-    z-index: 5;
-}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#101014;color:#fff;font-family:Arial,sans-serif}
+canvas{display:block}
+#panel{position:fixed;z-index:2;top:16px;left:16px;padding:14px 18px;background:#202027;border:1px solid #444;border-radius:12px;max-width:calc(100% - 32px)}
+#panel h2{margin:0 0 7px;font-size:19px}
+#status{font-size:12px;color:#bbb;overflow-wrap:anywhere}
+#controls{position:fixed;z-index:2;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:8px}
+button{background:#292930;color:white;border:1px solid #555;border-radius:9px;padding:12px 16px;white-space:nowrap}
 </style>
 </head>
 <body>
-
-<div id="ui">
-    <h2>Trevor Philips 3D</h2>
-    <div id="status">Loading model...</div>
+<div id="panel">
+<h2>Trevor Philips 3D</h2>
+<div id="status">Initializing...</div>
 </div>
-
-<div id="error">
-    <strong>Could not load Trevor</strong>
-    <p>Make sure your model is at <code>assets/trevor_phillips.glb</code>.</p>
-    <p>Check that the filename and folder match exactly.</p>
-</div>
-
 <div id="controls">
-    <button id="spin">Pause Spin</button>
-    <button id="reset">Reset Camera</button>
+<button id="spin">Pause Spin</button>
+<button id="reset">Reset Camera</button>
 </div>
-
-<canvas id="scene"></canvas>
-
-<script type="importmap">
-{
-    "imports": {
-        "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
-        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
-    }
-}
-</script>
 
 <script type="module">
-import * as THREE from "three";
-import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
+import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js";
+import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/controls/OrbitControls.js";
 
-const canvas = document.getElementById("scene");
 const status = document.getElementById("status");
-const error = document.getElementById("error");
-
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x101014);
 
-const camera = new THREE.PerspectiveCamera(
-    45,
-    window.innerWidth / window.innerHeight,
-    0.1,
-    1000
-);
-camera.position.set(0, 1.6, 5);
+const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.01, 1000);
+camera.position.set(0, 1.3, 4);
 
-const renderer = new THREE.WebGLRenderer({
-    canvas,
-    antialias: true
-});
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.2;
+document.body.prepend(renderer.domElement);
 
-scene.add(new THREE.HemisphereLight(0xffffff, 0x333344, 2));
+scene.add(new THREE.HemisphereLight(0xffffff, 0x444455, 2));
 
-const keyLight = new THREE.DirectionalLight(0xffffff, 3);
-keyLight.position.set(4, 7, 5);
-keyLight.castShadow = true;
-scene.add(keyLight);
+const light = new THREE.DirectionalLight(0xffffff, 3);
+light.position.set(4, 8, 5);
+scene.add(light);
 
-const rimLight = new THREE.PointLight(0x5577ff, 35, 15);
-rimLight.position.set(-4, 3, -3);
-scene.add(rimLight);
+const fill = new THREE.DirectionalLight(0x8899ff, 2);
+fill.position.set(-5, 3, -5);
+scene.add(fill);
 
 const floor = new THREE.Mesh(
     new THREE.PlaneGeometry(200, 200),
-    new THREE.MeshStandardMaterial({
-        color: 0x19191f,
-        roughness: 0.9
-    })
+    new THREE.MeshStandardMaterial({color:0x202027, roughness:0.9})
 );
 floor.rotation.x = -Math.PI / 2;
 floor.position.y = -0.01;
-floor.receiveShadow = true;
 scene.add(floor);
-
-const grid = new THREE.GridHelper(30, 30, 0x343440, 0x25252d);
-grid.position.y = 0;
-scene.add(grid);
 
 const character = new THREE.Group();
 scene.add(character);
@@ -179,91 +70,119 @@ scene.add(character);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.target.set(0, 1, 0);
-controls.minDistance = 1.5;
-controls.maxDistance = 10;
-controls.maxPolarAngle = Math.PI * 0.85;
+controls.minDistance = 0.5;
+controls.maxDistance = 15;
 
-let mixer = null;
 let spinning = true;
-let loaded = false;
+let mixer = null;
+let modelReady = false;
 
 const loader = new GLTFLoader();
+loader.setCrossOrigin("anonymous");
+
+status.textContent = "Downloading Trevor model...";
 
 loader.load(
-    "assets/trevor_phillips.glb",
+    new URL("./assets/trevor_phillips.glb", location.href).href,
     (gltf) => {
-        const model = gltf.scene;
+        try {
+            const model = gltf.scene;
 
-        model.traverse((object) => {
-            if (object.isMesh) {
-                object.castShadow = true;
-                object.receiveShadow = true;
+            const initialBox = new THREE.Box3().setFromObject(model);
+            if (initialBox.isEmpty()) {
+                throw new Error("The GLB contains no visible 3D objects.");
             }
-        });
 
-        const bounds = new THREE.Box3().setFromObject(model);
-        const size = bounds.getSize(new THREE.Vector3());
-        const center = bounds.getCenter(new THREE.Vector3());
+            const initialCenter = initialBox.getCenter(new THREE.Vector3());
+            model.position.sub(initialCenter);
 
-        model.position.sub(center);
+            const centeredBox = new THREE.Box3().setFromObject(model);
+            const size = centeredBox.getSize(new THREE.Vector3());
+            const maxDimension = Math.max(size.x, size.y, size.z);
 
-        const height = Math.max(size.y, 0.001);
-        const scale = 2.2 / height;
-        model.scale.setScalar(scale);
+            if (!Number.isFinite(maxDimension) || maxDimension <= 0) {
+                throw new Error("The model has invalid dimensions.");
+            }
 
-        character.add(model);
-        character.position.y = 1.1;
+            model.scale.setScalar(2.2 / maxDimension);
 
-        if (gltf.animations.length > 0) {
-            mixer = new THREE.AnimationMixer(model);
-            gltf.animations.forEach((clip) => {
-                mixer.clipAction(clip).play();
+            model.traverse((object) => {
+                if (object.isMesh) {
+                    object.frustumCulled = false;
+                    object.castShadow = true;
+                    object.visible = true;
+
+                    const materials = Array.isArray(object.material)
+                        ? object.material
+                        : [object.material];
+
+                    materials.forEach((material) => {
+                        if (material) material.side = THREE.DoubleSide;
+                    });
+                }
             });
-        }
 
-        controls.target.set(0, 1.1, 0);
-        status.textContent = "Trevor loaded · Drag to rotate camera";
-        error.style.display = "none";
-        loaded = true;
+            character.add(model);
+            character.position.y = 1.1;
+
+            const box = new THREE.Box3().setFromObject(character);
+            const finalCenter = box.getCenter(new THREE.Vector3());
+            controls.target.copy(finalCenter);
+
+            camera.position.set(0, finalCenter.y + 0.3, 4);
+            controls.update();
+
+            if (gltf.animations.length) {
+                mixer = new THREE.AnimationMixer(model);
+                gltf.animations.forEach((clip) => {
+                    mixer.clipAction(clip).play();
+                });
+            }
+
+            modelReady = true;
+            status.textContent = "Trevor loaded successfully!";
+        } catch (e) {
+            status.textContent = "Model error: " + e.message;
+            console.error(e);
+        }
     },
     (event) => {
         if (event.total > 0) {
-            const percent = Math.round(event.loaded / event.total * 100);
-            status.textContent = `Loading model: ${percent}%`;
+            status.textContent = "Downloading model: " +
+                Math.round(event.loaded / event.total * 100) + "%";
+        } else {
+            status.textContent = "Downloading model: " +
+                (event.loaded / 1048576).toFixed(1) + " MB";
         }
     },
-    () => {
-        status.textContent = "Model not found";
-        error.style.display = "block";
+    (error) => {
+        status.textContent = "Load failed. Check model format and network.";
+        console.error("Trevor GLB loading error:", error);
     }
 );
 
-document.getElementById("spin").addEventListener("click", (event) => {
+document.getElementById("spin").onclick = (event) => {
     spinning = !spinning;
     event.currentTarget.textContent = spinning ? "Pause Spin" : "Resume Spin";
-});
+};
 
-document.getElementById("reset").addEventListener("click", () => {
-    camera.position.set(0, 1.6, 5);
+document.getElementById("reset").onclick = () => {
+    camera.position.set(0, 1.3, 4);
     controls.target.set(0, 1.1, 0);
     controls.update();
-});
+};
 
 const clock = new THREE.Clock();
 
 function animate() {
     requestAnimationFrame(animate);
-
     const delta = Math.min(clock.getDelta(), 0.05);
 
-    if (loaded && spinning) {
+    if (modelReady && spinning) {
         character.rotation.y += delta * 0.8;
     }
 
-    if (mixer) {
-        mixer.update(delta);
-    }
-
+    if (mixer) mixer.update(delta);
     controls.update();
     renderer.render(scene, camera);
 }
@@ -271,12 +190,11 @@ function animate() {
 animate();
 
 window.addEventListener("resize", () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.aspect = innerWidth / innerHeight;
     camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 });
 </script>
-
 </body>
 </html>
